@@ -13,6 +13,10 @@ inputs:
     description: compile bit number 32|64
     required: false
     default: 64
+  icon:
+    description: The path and name of the icon file
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -21,7 +25,7 @@ runs:
       shell: pwsh
       run: |
         $wd = (Get-Item .).FullName
-        # 下载AHK主程序
+
         Invoke-WebRequest "https://www.autohotkey.com/download/ahk-v2.zip" -OutFile "$wd\autohotkey.zip";
         # 下载AHK2Exe
         $response = Invoke-RestMethod "https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest"
@@ -30,7 +34,6 @@ runs:
         }
         Invoke-WebRequest $url -OutFile "$wd\autohotkey2exe.zip";
         
-        # 解压
         Expand-Archive -Path "$wd\autohotkey.zip" -DestinationPath "$wd\autoHotkey\" -Force;
         Expand-Archive -Path "$wd\autohotkey2exe.zip" -DestinationPath "$wd\autoHotkey\Compiler" -Force;
         Remove-Item -Path "$wd\autohotkey.zip" -Force
@@ -44,6 +47,12 @@ runs:
         $command = 'ahk2exe.exe /silent verbose '
         if('${{inputs.in}}' -ne ''){
           $command += '/in "${{inputs.in}}" '
+          if('${{inputs.icon}}' -eq ''){
+            $icon = [System.IO.Path]::ChangeExtension('${{inputs.in}}', '.ico')
+          } else {
+            $icon = '${{inputs.icon}}'
+          }
+          $command += '/icon "$icon" '
         }
         if('${{inputs.out}}' -ne ''){
           $command += '/out "${{inputs.out}}" '
@@ -51,10 +60,4 @@ runs:
         if('${{inputs.base}}' -ne ''){
           $command += '/base "$Env:BaseFile" '
         }
-        $command += "| Write-Output"
-        Invoke-Expression $command
-        echo $command
-
-branding:
-  color: gray-dark
-  icon: anchor
+        Write-Output $command
